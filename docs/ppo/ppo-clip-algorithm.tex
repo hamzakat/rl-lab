@@ -1,0 +1,49 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage{algorithm} 
+\usepackage{algpseudocode} 
+\usepackage{amsmath} 
+
+% Redefine the caption format for algorithms
+\usepackage{caption}
+\DeclareCaptionLabelFormat{nolabel}{Algorithm}
+\captionsetup[algorithm]{labelformat=nolabel}
+
+\begin{document} 
+\pagenumbering{gobble}
+\begin{algorithm}
+    \caption{Proximal Policy Optimization with Clipped Surrogate Loss}
+    \begin{algorithmic}[1]
+        \State \textbf{Initialize} policy parameters $\theta$ and value function parameters $\phi$
+        \Statex \textbf{For each iteration}
+        \State \quad \textbf{Collect trajectories} by running policy $\pi_\theta$:
+        \Statex \quad \quad a. Record states $s_t$, actions $a_t$, rewards $r_t$, done flags $d_t$, 
+        \Statex \quad \quad \quad old log probabilities $\log \pi_{\theta_{\text{old}}}(a_t | s_t)$, and values $V(s_t; \phi)$
+        \State \quad \textbf{Compute advantages} using GAE:
+        \Statex \quad \quad a. Compute temporal-difference residuals:
+        \Statex \quad \quad \quad $$\delta_t = r_t + \gamma V(s_{t+1}; \phi) \cdot (1 - d_t) - V(s_t; \phi)$$
+        \Statex \quad \quad b. Compute advantages recursively:
+        \Statex \quad \quad \quad $$A_t = \delta_t + \gamma \lambda (1 - d_t) A_{t+1}$$
+        \State \quad \textbf{Compute returns}:
+        \Statex \quad \quad $$R_t = A_t + V(s_t; \phi)$$
+        \State \quad \textbf{Update policy and value function}:
+        \Statex \quad \quad \textbf{a. For several epochs,} shuffle data and divide into minibatches
+        \Statex \quad \quad \textbf{b. For each minibatch}:
+        \Statex \quad \quad \quad i. Compute new log probabilities $\log \pi_\theta(a_t | s_t)$, 
+        \Statex \quad \quad \quad \quad entropies $H[\pi_\theta](s_t)$, and values $V(s_t; \phi)$
+        \Statex \quad \quad \quad ii. Calculate probability ratio:
+        \Statex \quad \quad \quad \quad $$r_t(\theta) = \exp\left( \log \pi_\theta(a_t | s_t) - \log \pi_{\theta_{\text{old}}}(a_t | s_t) \right)$$
+        \Statex \quad \quad \quad iii. Compute surrogate loss with clipping:
+        \Statex \quad \quad \quad \quad $$L^{\text{CLIP}} = \operatorname{mean} \left[ \min \left( r_t(\theta) A_t,\ \operatorname{clip}\left( r_t(\theta),\ 1 - \epsilon,\ 1 + \epsilon \right) A_t \right) \right]$$
+        \Statex \quad \quad \quad iv. Compute clipped value estimate:
+        \Statex \quad \quad \quad \quad $$v_{\text{clipped}} = V_{\text{old}}(s_t; \phi) + \operatorname{clip}\left( V(s_t; \phi) - V_{\text{old}}(s_t; \phi),\ -\epsilon,\ \epsilon \right)$$
+        \Statex \quad \quad \quad v. Compute value loss:
+        \Statex \quad \quad \quad \quad $$L^{\text{VF}} = \operatorname{mean} \left[ \max \left( (V(s_t; \phi) - R_t)^2,\ (v_{\text{clipped}} - R_t)^2 \right) \right]$$
+        \Statex \quad \quad \quad vi. Compute entropy bonus:
+        \Statex \quad \quad \quad \quad $$L^{\text{S}} = \operatorname{mean} \left[ H[\pi_\theta](s_t) \right]$$
+        \Statex \quad \quad \quad vii. Compute total loss:
+        \Statex \quad \quad \quad \quad $$L = -L^{\text{CLIP}} + c_1 L^{\text{VF}} - c_2 L^{\text{S}}$$
+        \Statex \quad \quad \quad viii. Update parameters $\theta$ and $\phi$ using gradients of $L$
+        \Statex \textbf{End For}
+    \end{algorithmic}
+\end{algorithm}
+\end{document}

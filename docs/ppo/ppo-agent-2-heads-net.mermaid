@@ -1,0 +1,35 @@
+graph TD
+    subgraph Input
+        I[Input Image 4x84x84] --> N[Normalize /255.0]
+    end
+
+    subgraph Shared Network
+        C1[Conv2D: 4->32 channels<br/>8x8 kernel, stride 4] --> R1[ReLU]
+        R1 --> C2[Conv2D: 32->64 channels<br/>4x4 kernel, stride 2]
+        C2 --> R2[ReLU]
+        R2 --> C3[Conv2D: 64->64 channels<br/>3x3 kernel, stride 1]
+        C3 --> R3[ReLU]
+        R3 --> F[Flatten]
+        F --> L1[Linear: 64*7*7->512]
+        L1 --> R4[ReLU]
+    end
+
+    N --> C1
+
+    subgraph Actor Head
+        R4 --> A[Linear: 512->action_space.n]
+        A --> P[Categorical Distribution]
+        P --> AS[Sample Action]
+        P --> LP[Log Probabilities]
+        P --> E[Entropy]
+    end
+
+    subgraph Critic Head
+        R4 --> V[Linear: 512->1<br/>Value Estimate]
+    end
+
+    style I fill:#f9f,stroke:#333
+    style V fill:#afd,stroke:#333
+    style AS fill:#afd,stroke:#333
+    style LP fill:#afd,stroke:#333
+    style E fill:#afd,stroke:#333
